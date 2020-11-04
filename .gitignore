@@ -1,0 +1,9 @@
+*.log
+/target/*
+*.class
+*.aux
+*.gz
+*.out
+*.toc
+*.class
+*.jar
