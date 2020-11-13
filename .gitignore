@@ -1,5 +1,6 @@
 *.log
 /target/*
+/.idea/*
 *.class
 *.aux
 *.gz
