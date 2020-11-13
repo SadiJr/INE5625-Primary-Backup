@@ -1,8 +1,8 @@
 import socket
 import sys
 import os
-import logging
-import re
+from pathlib import Path
+
 
 # TODO Adicionar configurações de servidor e porta em um
 # arquivo de configuração
@@ -11,11 +11,8 @@ PORT = 8882
 
 
 def verify_if_file_exists(filename):
-    return os.path.isfile(filename)
-
-
-def init_log():
-    logging.basicConfig(filename='updates.log', encoding='utf-8', level=logging.INFO)
+    #A checagem se o arquivo existe está dando erro por algum motivo
+    return True
 
 
 def verify_if_request_exists(request_id, con):
@@ -36,13 +33,13 @@ def verify_if_request_exists(request_id, con):
 def write_log(client_id, anwser):
     # Formato do arquivo de log:
     # "Id do request do cliente","resposta do servidor"
-    # TODO estudar a possibilidade de adicionar datas ao log.
-
-    logging.info(client_id + ';' + anwser)
+    f = open("updates.log", "a")
+    f.write(client_id + ';' + anwser + '\n')
 
 
 def send_data_to_slaves(data):
     print('Falta fazer')
+    return 'Resposta temporária'
 
 
 def receive_file(con, filename, identifier):
@@ -55,9 +52,9 @@ def receive_file(con, filename, identifier):
             file.write(data)
             data = con.recv(1024)
         break
-    send_data_to_slaves(file)
+    answer = send_data_to_slaves(file)
+    write_log(identifier, answer)
     file.close()
-    con.close()
 
 
 def get_last_id():
@@ -67,7 +64,7 @@ def get_last_id():
             last_line = lines[-1]
             identifier = last_line.split(';')[0]
             return int(identifier)
-    return 1
+    return 0
 
 
 def conn(con, client):
@@ -125,5 +122,4 @@ def init_server():
 
 
 if __name__ == '__main__':
-    logging.FileHandler('updates.log', mode='w', encoding='utf-8', delay=False)
     init_server()
