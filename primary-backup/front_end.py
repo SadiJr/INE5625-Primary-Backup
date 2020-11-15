@@ -1,21 +1,25 @@
-import sys
-import os
 import socket
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 8882
 
 
-def send_file():
+def connect():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.connect((SERVER_IP, SERVER_PORT))
 
-    filename = 'teste.txt'
     server.send('get_last_id'.encode('utf-8'))
 
+    return server
+
+
+def send_file():
+
+    server = connect()
     last_id = int(server.recv(256).decode('utf-8')) + 1
     print('Last Id é ' + str(last_id))
 
+    filename = 'teste.txt'
     headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
     server.send(headers.encode('utf-8'))
 
