@@ -20,7 +20,7 @@ def send_file():
     print('Last Id é ' + str(last_id))
 
     filename = 'teste.txt'
-    headers = 'id:' + str(3) + '\nfilename:' + filename + '\n'
+    headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
     server.send(headers.encode('utf-8'))
 
     print('Aguardando resposta do server')
