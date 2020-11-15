@@ -16,7 +16,7 @@ def send_file():
     last_id = int(server.recv(256).decode('utf-8')) + 1
     print('Last Id é ' + str(last_id))
 
-    headers = 'id:' + str(3) + '\nfilename:' + filename + '\n'
+    headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
     server.send(headers.encode('utf-8'))
 
     print('Aguardando resposta do server')
