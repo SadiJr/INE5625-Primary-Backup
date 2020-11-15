@@ -92,7 +92,6 @@ def conn(con, client):
                 con.send("Resposta já arquivada".encode("utf-8"))
                 con.close()
             else:
-                con.send("Manda o arquivo, puto".encode("utf-8"))
                 receive_file(con, filename, identifier)
         else:
             con.send("Ocorreu um erro. Vai tomar no cu")

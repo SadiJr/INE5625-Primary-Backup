@@ -20,16 +20,12 @@ def send_file():
     server.send(headers.encode('utf-8'))
 
     print('Aguardando resposta do server')
-    response = server.recv(1024)
-    print(response.decode('utf-8'))
-
     f = open("teste.txt", "rb")
 
-    l = f.read(1024)
-    while l:
-        server.send(l)
-        l = f.read(1024)
-        print('a')
+    line = f.read(1024)
+    while line:
+        server.send(line)
+        line = f.read(1024)
     server.close()
 
 
