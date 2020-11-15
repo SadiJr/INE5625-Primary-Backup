@@ -1,22 +1,55 @@
 import socket
+import os
 
 SERVER_IP = "127.0.0.1"
 SERVER_PORT = 8882
 
 
-def delete():
+def verify_if_file_exists(filename):
+    return os.path.isfile(filename)
+
+
+def delete(server):
     print('Falta fazer')
 
-
-def upload():
-    print('Falta fazer')
+    write_history(1, 'Deletar')
 
 
-def update():
-    print('Falta fazer')
+def upload(server):
+    file = str(input('Digite o caminho completo do arquivo: '))
+
+    if verify_if_file_exists(file):
+        filename = os.path.split(file)[1]
+        print(filename)
+        server.send('get_last_id'.encode('utf-8'))
+        last_id = int(server.recv(256).decode('utf-8')) + 1
+        print('Last Id é ' + str(last_id))
+        headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
+        server.send(headers.encode('utf-8'))
+
+        print('Aguardando resposta do server')
+
+        f = open(file, "rb")
+        line = f.read(1024)
+        while line:
+            server.send(line)
+            line = f.read(1024)
+
+        print("Upload completo")
+        server.send("bDONE".encode('UTF-8'))
+        answer = server.recv(1024)
+        print(answer)
+
+        write_history(last_id, "Upload de arquivo")
+    else:
+        print("Arquivo não encontrado. Tente novamente.")
 
 
-def history():
+def update(server):
+    print("Falta fazer")
+
+
+def history(server):
     print('Falta fazer')
 
 
@@ -25,22 +58,22 @@ def shutdown():
     exit(1)
 
 
-def switch(choice):
+def switch(choice, server):
     if choice == 'u':
-        upload()
+        upload(server)
     elif choice == 'd':
-        delete()
+        delete(server)
     elif choice == 'a':
-        update()
+        update(server)
     elif choice == 'h':
-        history()
+        history(server)
     elif choice == 's':
         shutdown()
     else:
         return 'Escolha não valida. Tente novamente'
 
 
-def menu():
+def menu(server):
     while True:
         print('''
             Menu:
@@ -52,7 +85,7 @@ def menu():
             [s] - Sair
             ''')
         choice = str(input('Escolha uma opção: '))
-        switch(choice)
+        switch(choice, server)
 
 
 def connect():
@@ -64,29 +97,16 @@ def connect():
 def send_file():
     try:
         server = connect()
-
-        menu()
-
-        server.send('get_last_id'.encode('utf-8'))
-        last_id = int(server.recv(256).decode('utf-8')) + 1
-        print('Last Id é ' + str(last_id))
-
-        filename = 'teste.txt'
-        headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
-        server.send(headers.encode('utf-8'))
-
-        print('Aguardando resposta do server')
-        f = open("teste.txt", "rb")
-
-        line = f.read(1024)
-        while line:
-            server.send(line)
-            line = f.read(1024)
-
+        menu(server)
     except socket.error as e:
         print("Erro ao tentar conectar com o servidor")
     finally:
         server.close()
+
+
+def write_history(id_request, action):
+    f = open("history", "a+")
+    f.write(id_request + ' - ' + action)
 
 
 if __name__ == '__main__':
