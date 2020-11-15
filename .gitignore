@@ -8,3 +8,5 @@
 *.toc
 *.class
 *.jar
+*/out
+*.txt

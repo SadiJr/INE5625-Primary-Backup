@@ -1,8 +1,6 @@
+import os
 import socket
 import sys
-import os
-from pathlib import Path
-
 
 # TODO Adicionar configurações de servidor e porta em um
 # arquivo de configuração
@@ -11,8 +9,10 @@ PORT = 8882
 
 
 def verify_if_file_exists(filename):
-    #A checagem se o arquivo existe está dando erro por algum motivo
-    return True
+    if os.path.exists(filename) | os.path.exists('data/' + filename):
+        return True
+    else:
+        return False
 
 
 def verify_if_request_exists(request_id, con):
@@ -58,7 +58,7 @@ def receive_file(con, filename, identifier):
 
 
 def get_last_id():
-    if verify_if_file_exists('updtes.log'):
+    if verify_if_file_exists('updates.log') and os.stat("updates.log").st_size > 0:
         with open('updates.log', 'r') as f:
             lines = f.read().splitlines()
             last_line = lines[-1]
