@@ -91,13 +91,14 @@ def send_delete_request_to_slaves():
 
 
 def delete(connection, data):
-    identifier = str(data).split(';')[1]
-    filename = str(data).split(';')[2]
+    identifier = str(data).split(';')[1].split(':')[1]
+    filename = str(data).split(';')[2].split(':')[1]
 
     if verify_if_request_exists(identifier, connection):
         connection.close()
     elif verify_if_file_exists(filename):
         send_delete_request_to_slaves()
+        os.remove(filename)
     else:
         connection.send("Arquivo não existente no servidor".encode("UTF-8"))
         connection.close()
