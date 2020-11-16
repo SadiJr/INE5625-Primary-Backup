@@ -2,10 +2,28 @@ import socket
 import sys
 import os
 from pathlib import Path
+import configparser
+import collections
+
 # TODO Adicionar configurações de servidor e porta em um
 # arquivo de configuração
-HOST = "127.0.0.1"
-PORT = 8882
+
+config = configparser.RawConfigParser()
+config.read('ips.conf')
+
+
+def get_config_section():
+    if not hasattr(get_config_section, 'section_dict'):
+        get_config_section.section_dict = collections.defaultdict()
+
+        for section in config.sections():
+            get_config_section.section_dict[section] = dict(config.items(section))
+
+    return get_config_section.section_dict
+
+
+def connect_to_slaves():
+    pass
 
 
 def verify_if_log_exists():
@@ -33,7 +51,7 @@ def verify_if_request_exists(request_id, con):
 
 def write_log(client_id, anwser):
     # Formato do arquivo de log:
-    # "Id do request do cliente","resposta do servidor"
+    # "Id do request do cliente";"resposta do servidor"
     f = open("updates.log", "a+")
     f.write(client_id + ";" + anwser + "\n")
 
@@ -43,23 +61,46 @@ def send_data_to_slaves(data):
     return "Resposta temporária"
 
 
-def receive_file(con, filename, identifier):
+def receive_file(connection, filename, identifier, action):
     print("Filename: " + filename + " - id: " + identifier)
     file = open(filename, "wb")
 
-    line = con.recv(1024)
+    line = connection.recv(1024)
     while line:
         if line.__contains__(b"DONE"):
             break
         file.write(line)
-        line = con.recv(1024)
+        line = connection.recv(1024)
 
     file.close()
     print("Arquivo recebido!")
     answer = send_data_to_slaves(file)
     write_log(identifier, answer)
-    file.close()
-    con.send('Recebido'.encode('UTF-8'))
+    print("Log escrito")
+
+    response = "Arquivo " + str(action) + " com sucesso"
+    connection.send(response.encode('UTF-8'))
+
+
+def verify_if_file_exists(filename):
+    return os.path.isfile(filename)
+
+
+def send_delete_request_to_slaves():
+    pass
+
+
+def delete(connection, data):
+    identifier = str(data).split(';')[1]
+    filename = str(data).split(';')[2]
+
+    if verify_if_request_exists(identifier, connection):
+        connection.close()
+    elif verify_if_file_exists(filename):
+        send_delete_request_to_slaves()
+    else:
+        connection.send("Arquivo não existente no servidor".encode("UTF-8"))
+        connection.close()
 
 
 def get_last_id():
@@ -72,40 +113,59 @@ def get_last_id():
     return 0
 
 
-def conn(con, client):
-    while True:
-        print("Iniciando conexão com o cliente ", client)
+def upload_or_update(connection, message):
+    for line in message.split(";"):
+        if line.startswith("id:"):
+            identifier = line.split(":")[1]
+        elif line.startswith("filename:"):
+            filename = line.split(":")[1]
 
-        message = con.recv(256).decode("utf-8")
+    if verify_if_request_exists(identifier, connection):
+        connection.close()
+    else:
+        if message.__contains__("update"):
+            action = "atualizado"
+        else:
+            action = "criado"
+
+        connection.send("OK".encode('UTF-8'))
+        receive_file(connection, filename, identifier, action)
+
+
+def connect(connection, client):
+    print("Iniciando conexão com o cliente ", client)
+
+    while True:
+        message = connection.recv(256).decode("utf-8")
 
         print("Mensagem recebida do cliente: " + message)
         if not message:
             return
+
         if message == "get_last_id":
-            con.send(str(get_last_id()).encode("utf-8"))
-        elif message.__contains__("id"):
+            connection.send(str(get_last_id()).encode("utf-8"))
+            continue
 
-            for line in message.split("\n"):
-                if line.startswith("id:"):
-                    identifier = line.split(":")[1]
-                elif line.startswith("filename:"):
-                    filename = line.split(":")[1]
-
-            if verify_if_request_exists(identifier, con):
-                con.send("Resposta já arquivada".encode("utf-8"))
-                con.close()
-            else:
-                con.send("OK".encode('UTF-8'))
-                receive_file(con, filename, identifier)
+        if message.__contains__("delete"):
+            delete(connection, message)
+        elif message.__contains__("update") | message.__contains__("upload"):
+            upload_or_update(connection, message)
         else:
-            con.send("Ocorreu um erro. Vai tomar no cu")
-            con.close()
+            connection.send("Erros na requisição. Vai tomar no cu".encode("UTF-8"))
+            connection.close()
             break
+
+    print("Finalizando conexão com o cliente")
 
 
 def init_server():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = (HOST, PORT)
+
+    config_dict = get_config_section()
+    host = config_dict['master']['ip']
+    port = config_dict['master']['port']
+
+    server_address = (host, int(port))
 
     try:
         sock.bind(server_address)
@@ -115,11 +175,12 @@ def init_server():
 
     print("Iniciando servidor com o IP %s na porta %s" % sock.getsockname())
     sock.listen(1)
+
     while True:
         try:
             print("Esperando conexões")
             connection, client = sock.accept()
-            conn(connection, client)
+            connect(connection, client)
         except Exception as e:
             print("Deu ruim: ", str(e))
             connection.close()
