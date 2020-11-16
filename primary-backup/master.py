@@ -28,7 +28,7 @@ def connect_to_slaves():
 
 def verify_if_log_exists():
     file = Path("updates.log")
-    if file.is_file():
+    if file.is_file() and os.stat("updates.log").st_size > 0:
         return True
     return False
 
@@ -181,6 +181,7 @@ def init_server():
         try:
             print("Esperando conexões")
             connection, client = sock.accept()
+            connection.setblocking(1)
             connect(connection, client)
         except Exception as e:
             print("Deu ruim: ", str(e))

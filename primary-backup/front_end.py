@@ -102,7 +102,8 @@ def switch(choice, server):
 def is_socket_closed(sock) -> bool:
     try:
         # this will try to read bytes without blocking and also without removing them from buffer (peek only)
-        data = sock.recv(16, socket.MSG_DONTWAIT | socket.MSG_PEEK)
+        sock.setblocking(0)
+        data = sock.recv(512, socket.MSG_PEEK)
         if len(data) == 0:
             return True
     except BlockingIOError:
