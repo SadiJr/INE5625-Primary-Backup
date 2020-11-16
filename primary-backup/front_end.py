@@ -24,6 +24,7 @@ def upload_or_update(server, action):
     file = str(input('Digite o caminho completo do arquivo: '))
 
     if verify_if_file_exists(file):
+        server.setblocking(1)
         filename = os.path.split(file)[1]
         print(filename)
         server.send('get_last_id'.encode('utf-8'))
@@ -103,7 +104,7 @@ def is_socket_closed(sock) -> bool:
     try:
         # this will try to read bytes without blocking and also without removing them from buffer (peek only)
         sock.setblocking(0)
-        data = sock.recv(512, socket.MSG_PEEK)
+        data = sock.recv(16, socket.MSG_PEEK)
         if len(data) == 0:
             return True
     except BlockingIOError:
@@ -152,7 +153,7 @@ def init():
         server = connect()
         menu(server)
     except socket.error as e:
-        print("Erro ao tentar conectar com o servidor")
+        print("Erro ao tentar conectar com o servidor", str(e))
     finally:
         server.close()
 

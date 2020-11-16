@@ -211,10 +211,9 @@ def init_server():
         try:
             print("Esperando conexões")
             connection, client = sock.accept()
-            connection.setblocking(1)
             connect(connection, client)
         except Exception as e:
-            print("Deu ruim: ", str(e.with_traceback()))
+            print("Deu ruim: ", str(e))
             connection.close()
 
     sock.close()
