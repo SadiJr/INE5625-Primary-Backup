@@ -47,20 +47,23 @@ def receive_file(con, filename, identifier):
     print("Filename: " + filename + " - id: " + identifier)
     file = open(filename, "wb")
 
-    while True:
-        data = con.recv(1024)
-        while data:
-            file.write(data)
-            data = con.recv(1024)
-        break
+    line = con.recv(1024)
+    while line:
+        if line.__contains__(b"DONE"):
+            break
+        file.write(line)
+        line = con.recv(1024)
+
+    file.close()
+    print("Arquivo recebido!")
     answer = send_data_to_slaves(file)
     write_log(identifier, answer)
     file.close()
+    con.send('Recebido'.encode('UTF-8'))
 
 
 def get_last_id():
     if verify_if_log_exists():
-        print("Arquivo existe!")
         with open("updates.log", "r") as f:
             lines = f.read().splitlines()
             last_line = lines[-1]
@@ -92,6 +95,7 @@ def conn(con, client):
                 con.send("Resposta já arquivada".encode("utf-8"))
                 con.close()
             else:
+                con.send("OK".encode('UTF-8'))
                 receive_file(con, filename, identifier)
         else:
             con.send("Ocorreu um erro. Vai tomar no cu")

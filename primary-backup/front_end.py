@@ -24,23 +24,27 @@ def upload(server):
         server.send('get_last_id'.encode('utf-8'))
         last_id = int(server.recv(256).decode('utf-8')) + 1
         print('Last Id é ' + str(last_id))
-        headers = 'id:' + str(last_id) + '\nfilename:' + filename + '\n'
-        server.send(headers.encode('utf-8'))
+        headers = 'id:' + str(last_id) + '\nfilename:' + filename
+        server.send(headers.encode('utf-8') + b"")
+        status = server.recv(16).decode('UTF-8')
 
-        print('Aguardando resposta do server')
+        if status == "OK":
+            print('Aguardando resposta do server')
 
-        f = open(file, "rb")
-        line = f.read(1024)
-        while line:
-            server.send(line)
+            f = open(file, "rb")
             line = f.read(1024)
+            while line:
+                server.send(line)
+                line = f.read(1024)
+            f.close()
+            server.send(b"DONE")
+            print("Upload completo")
+            answer = server.recv(1024)
+            print(answer)
 
-        print("Upload completo")
-        server.send("bDONE".encode('UTF-8'))
-        answer = server.recv(1024)
-        print(answer)
-
-        write_history(last_id, "Upload de arquivo")
+            write_history(last_id, "Upload de arquivo")
+        else:
+            print("Ocorreu um erro.")
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
@@ -106,7 +110,7 @@ def send_file():
 
 def write_history(id_request, action):
     f = open("history", "a+")
-    f.write(id_request + ' - ' + action)
+    f.write(str(id_request) + ' - ' + action)
 
 
 if __name__ == '__main__':
