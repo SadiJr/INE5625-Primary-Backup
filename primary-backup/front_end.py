@@ -115,6 +115,7 @@ def is_socket_closed(sock) -> bool:
 
 
 def menu(server):
+
     while True:
         if is_socket_closed(server):
             print("Conexão com o servidor fechada. Necessário reiniciar aplicação")
@@ -162,6 +163,7 @@ def write_history(id_request, action):
     f = open("history", "a+")
     log = str(id_request) + " - " + str(action) + "\n"
     f.write(log)
+    f.flush()
     f.close()
 
 

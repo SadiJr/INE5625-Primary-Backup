@@ -13,6 +13,7 @@ def save_history(connection):
             if line.__contains__(b"DONE"):
                 break
             file.write(line)
+            file.flush()
             line = connection.recv(1024)
 
         file.close()
@@ -22,7 +23,7 @@ def save_history(connection):
 
 
 def create_or_update(connection, request):
-    filename = request.split(';')[1]
+    filename = str(request)
 
     try:
         file = open(filename, "wb")
@@ -32,6 +33,7 @@ def create_or_update(connection, request):
             if line.__contains__(b"DONE"):
                 break
             file.write(line)
+            file.flush()
             line = connection.recv(1024)
 
         file.close()

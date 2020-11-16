@@ -4,9 +4,6 @@ import os
 from pathlib import Path
 import configparser
 import collections
-from array import *
-
-# TODO Adicionar configurações de servidor e porta em um arquivo de configuração
 
 config = configparser.RawConfigParser()
 config.read('ips.conf')
@@ -39,14 +36,16 @@ def connect_to_slaves():
     for line in range(int((len(data) / 2))):
         host = data[h]
         port = data[p]
-        server = create_slave_server(host, port)
-
-        connections.append(server)
+        try:
+            server = create_slave_server(host, port)
+            connections.append(server)
+        except ConnectionRefusedError:
+            print("Erro ao tentar conectar no servidor {0} na porta {1}".format(host, port))
 
         h += 2
         p += 2
 
-    print(connections)
+    return int((len(data) / 2))
 
 
 def verify_if_log_exists():
@@ -74,15 +73,29 @@ def verify_if_request_exists(request_id, con):
 
 
 def write_log(client_id, anwser):
-    # Formato do arquivo de log:
-    # "Id do request do cliente";"resposta do servidor"
     f = open("updates.log", "a+")
     f.write(client_id + ";" + anwser + "\n")
+    f.flush()
 
 
-def send_data_to_slaves(data):
-    print("Falta fazer")
-    return "Resposta temporária"
+def send_data_to_slaves(filename):
+    responses = []
+    for i in connections:
+        conn = socket.socket(i)
+        conn.send(filename)
+        conn.settimeout(5.0)
+
+        f = open(filename, "rb")
+        line = f.read(1024)
+
+        while line:
+            conn.send(line)
+            line = f.read(1024)
+
+        f.close()
+        conn.send(b"DONE")
+        responses.append(conn.recv(1024).decode("UTF-8"))
+    return responses
 
 
 def receive_file(connection, filename, identifier, action):
@@ -112,8 +125,17 @@ def verify_if_file_exists(filename):
     return os.path.isfile(filename)
 
 
-def send_delete_request_to_slaves():
-    pass
+def send_delete_request_to_slaves(filename):
+    responses = []
+    for i in connections:
+        conn = socket.socket(i)
+        message = "delete;" + filename
+        conn.send(message.encode("UTF-8"))
+        conn.settimeout(5.0)
+
+        responses.append(conn.recv(1024).decode("UTF-8"))
+
+    return responses
 
 
 def delete(connection, data):
@@ -123,9 +145,15 @@ def delete(connection, data):
     if verify_if_request_exists(identifier, connection):
         connection.close()
     elif verify_if_file_exists(filename):
-        send_delete_request_to_slaves()
         os.remove(filename)
-        connection.send("Arquivo deletado com sucesso".encode("UTF-8"))
+
+        responses = send_delete_request_to_slaves(filename)
+        if len(responses) < len(connection / 2):
+            # TODO Verificar qual será a lógica de negócio aplicada para esse tipo de situação
+            connection.send("A maioria dos servivores de backup caiu, "
+                            "infelizmente teremos de abortar sua requisição".encode("UTF-8"))
+        else:
+            connection.send("Arquivo deletado com sucesso".encode("UTF-8"))
     else:
         connection.send("Arquivo não existente no servidor".encode("UTF-8"))
         connection.close()
@@ -142,6 +170,7 @@ def get_last_id():
 
 
 def upload_or_update(connection, message):
+    identifier, filename = "", ""
     for line in message.split(";"):
         if line.startswith("id:"):
             identifier = line.split(":")[1]
@@ -186,7 +215,30 @@ def connect(connection, client):
             connection.close()
             break
 
+        if int(message.split(";")[1].split(":")[1]) % 10 == 0:
+            send_log_to_slaves()
+
     print("Finalizando conexão com o cliente")
+
+
+def send_log_to_slaves():
+    conn = ""
+    for i in connections:
+        try:
+            conn = socket.socket(i)
+            conn.send("history".encode("UTF-8"))
+
+            f = open("updates.log", "rb")
+            line = f.read(1024)
+
+            while line:
+                conn.send(line)
+                line = f.read(1024)
+            f.close()
+            conn.send(b"DONE")
+        except Exception as e:
+            print(type(e))
+            print("Erro ao mandar arquivo de log para o backup {0}".format(conn.getsockname()))
 
 
 def init_server():
@@ -207,18 +259,22 @@ def init_server():
     print("Iniciando servidor com o IP %s na porta %s" % sock.getsockname())
     sock.listen(1)
 
+    connected_slaves_count = connect_to_slaves()
+
+    #if len(connections) < (connected_slaves_count / 2):
+    #   print("Mais da metade dos servidores de backup está fora do ar. Abortando...")
+    #   sys.exit(0)
+
     while True:
         try:
             print("Esperando conexões")
             connection, client = sock.accept()
             connect(connection, client)
         except Exception as e:
-            print("Deu ruim: ", str(e))
+            print("Deu ruim: ", str(e.__traceback__))
             connection.close()
-
-    sock.close()
+            sock.close()
 
 
 if __name__ == "__main__":
-    #connect_to_slaves()
     init_server()
