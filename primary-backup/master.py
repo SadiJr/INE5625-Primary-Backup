@@ -4,12 +4,13 @@ import os
 from pathlib import Path
 import configparser
 import collections
+from array import *
 
-# TODO Adicionar configurações de servidor e porta em um
-# arquivo de configuração
+# TODO Adicionar configurações de servidor e porta em um arquivo de configuração
 
 config = configparser.RawConfigParser()
 config.read('ips.conf')
+connections = []
 
 
 def get_config_section():
@@ -22,8 +23,30 @@ def get_config_section():
     return get_config_section.section_dict
 
 
+def create_slave_server(host, port):
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.connect((host, int(port)))
+    return server
+
+
 def connect_to_slaves():
-    pass
+    slaves = dict(config.items('slaves'))
+    print(slaves)
+
+    data = list(slaves.values())
+    h, p = 0, 1
+
+    for line in range(int((len(data) / 2))):
+        host = data[h]
+        port = data[p]
+        server = create_slave_server(host, port)
+
+        connections.append(server)
+
+        h += 2
+        p += 2
+
+    print(connections)
 
 
 def verify_if_log_exists():
@@ -34,8 +57,9 @@ def verify_if_log_exists():
 
 
 def verify_if_request_exists(request_id, con):
-    if verify_if_log_exists:
+    if verify_if_log_exists():
         split_char = ";"
+
         with open("updates.log", "r") as f:
             lines = f.read().split("\n")
 
@@ -67,9 +91,11 @@ def receive_file(connection, filename, identifier, action):
 
     line = connection.recv(1024)
     while line:
+        print("Linha recebida: " + str(line))
         if line.__contains__(b"DONE"):
             break
         file.write(line)
+        file.flush()
         line = connection.recv(1024)
 
     file.close()
@@ -99,6 +125,7 @@ def delete(connection, data):
     elif verify_if_file_exists(filename):
         send_delete_request_to_slaves()
         os.remove(filename)
+        connection.send("Arquivo deletado com sucesso".encode("UTF-8"))
     else:
         connection.send("Arquivo não existente no servidor".encode("UTF-8"))
         connection.close()
@@ -128,6 +155,9 @@ def upload_or_update(connection, message):
             action = "atualizado"
         else:
             action = "criado"
+            if verify_if_file_exists(filename):
+                connection.send("Arquivo já criado! Utilize a opção atualizar".encode("UTF-8"))
+                return
 
         connection.send("OK".encode('UTF-8'))
         receive_file(connection, filename, identifier, action)
@@ -183,11 +213,12 @@ def init_server():
             connection, client = sock.accept()
             connect(connection, client)
         except Exception as e:
-            print("Deu ruim: ", str(e))
+            print("Deu ruim: ", str(e.with_traceback()))
             connection.close()
 
     sock.close()
 
 
 if __name__ == "__main__":
+    #connect_to_slaves()
     init_server()
