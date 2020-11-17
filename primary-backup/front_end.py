@@ -36,7 +36,7 @@ def upload_or_update(server, action):
 
         print('Aguardando resposta do server')
 
-        status = server.recv(16).decode()
+        status = server.recv(1024).decode()
         if status == "OK":
             f = open(file, "rb")
 
@@ -54,7 +54,7 @@ def upload_or_update(server, action):
             write_history(last_id, answer)
         else:
             print("Request já realizado. Resultado: ")
-            print(server.recv(1024).decode())
+            print(status)
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
