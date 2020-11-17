@@ -80,9 +80,13 @@ def history(server):
             line = f.read(1024)
         identifier = str(input('Digite o id que deseja refazer: '))
 
+        print("Reenviando id {0} para o servidor".format(identifier))
+
         header = "id:" + identifier
         server.send(header.encode())
 
+        print("Aguardando resposta do servidor...")
+        print("Resposta recebida do servidor, referente ao request com id {0}:".format(identifier))
         print(server.recv(1024).decode())
 
     else:
