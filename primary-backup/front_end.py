@@ -8,14 +8,15 @@ def verify_if_file_exists(filename):
 
 
 def delete(server):
+    server.setblocking(1)
     file = str(input('Digite o nome do arquivo (apenas o nome, sem o caminho): '))
 
-    server.send("get_last_id".encode("UTF-8"))
-    last_id = int(server.recv(256).decode("UTF-8")) + 1
+    server.send("get_last_id".encode())
+    last_id = int(server.recv(256).decode()) + 1
     headers = 'delete;id:' + str(last_id) + ';filename:' + file
 
-    server.send(headers.encode("UTF-8"))
-    answer = server.recv(1024)
+    server.send(headers.encode())
+    answer = server.recv(1024).decode()
 
     write_history(str(last_id), answer)
 
@@ -26,33 +27,34 @@ def upload_or_update(server, action):
     if verify_if_file_exists(file):
         server.setblocking(1)
         filename = os.path.split(file)[1]
-        print(filename)
-        server.send('get_last_id'.encode('utf-8'))
-        last_id = int(server.recv(256).decode('utf-8')) + 1
-        print('Last Id é ' + str(last_id))
-        headers = action + ';id:' + str(last_id) + ';filename:' + filename
-        server.send(headers.encode('utf-8') + b"")
-        status = server.recv(16).decode('UTF-8')
+        filesize = os.path.getsize(file)
 
+        server.send('get_last_id'.encode())
+        last_id = int(server.recv(256).decode()) + 1
+        headers = action + ';id:' + str(last_id) + ';filename:' + filename + ';filesize:' + str(filesize)
+        server.send(headers.encode())
+
+        print('Aguardando resposta do server')
+
+        status = server.recv(16).decode()
         if status == "OK":
-            print('Aguardando resposta do server')
-
             f = open(file, "rb")
+
             line = f.read(1024)
             while line:
                 server.send(line)
                 line = f.read(1024)
             f.close()
-            server.send(b"DONE")
+
             print("Upload completo")
 
-            answer = server.recv(1024).decode("UTF-8")
+            answer = server.recv(1024).decode()
             print(answer)
 
             write_history(last_id, answer)
         else:
-            print("Request já realizado. Resultado")
-            print(server.recv(1024).decode("UTF-8"))
+            print("Request já realizado. Resultado: ")
+            print(server.recv(1024).decode())
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
@@ -66,6 +68,7 @@ def update(server):
 
 
 def history(server):
+    server.setblocking(1)
     if verify_if_file_exists("history.log"):
         f = open("history.log", "r")
 
@@ -76,6 +79,12 @@ def history(server):
             print(line)
             line = f.read(1024)
         identifier = str(input('Digite o id que deseja refazer: '))
+
+        header = "id:" + identifier
+        server.send(header.encode())
+
+        print(server.recv(1024).decode())
+
     else:
         print("Não foram realizadas operações anteriores")
 
@@ -160,7 +169,7 @@ def init():
 
 
 def write_history(id_request, action):
-    f = open("history", "a+")
+    f = open("history.log", "a+")
     log = str(id_request) + " - " + str(action) + "\n"
     f.write(log)
     f.flush()
