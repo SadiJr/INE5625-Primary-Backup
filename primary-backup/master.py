@@ -68,8 +68,8 @@ def verify_if_request_exists(request_id, con):
             if request_id in line.split(split_char)[0]:
                 temp = line.split(split_char)
                 answer = split_char.join(temp[1:])
-                print("Request já realizado, com a resposta sendo " + answer)
-                con.send(answer)
+                print("Request já realizado, com a resposta sendo:\n" + answer)
+                con.send(answer.encode())
                 return True
     return False
 
@@ -256,6 +256,18 @@ def connect(connection, client):
             delete(connection, message)
         elif message.__contains__("update") | message.__contains__("upload"):
             upload_or_update(connection, message)
+
+        elif message.__contains__("id:"):
+            print("Verificando se a requisição já foi processada...")
+            identifier = message.split(":")[1]
+
+            if verify_if_request_exists(identifier, connection):
+                print("Request {0} já arquivado e resposta já enviada ao cliente".format(identifier))
+                continue
+            else:
+                print("Erro ao tentar encontrar id {0} no registro de logs.".format(identifier))
+                sys.exit(0)
+
         else:
             connection.send("Erros na requisição".encode())
             connection.close()

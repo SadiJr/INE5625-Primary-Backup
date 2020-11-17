@@ -17,7 +17,7 @@ def delete(server):
 
     server.send(headers.encode())
     answer = server.recv(1024).decode()
-    print(answer)
+
     write_history(str(last_id), answer)
 
 
@@ -36,7 +36,7 @@ def upload_or_update(server, action):
 
         print('Aguardando resposta do server')
 
-        status = server.recv(16).decode()
+        status = server.recv(1024).decode()
         if status == "OK":
             f = open(file, "rb")
 
@@ -54,7 +54,7 @@ def upload_or_update(server, action):
             write_history(last_id, answer)
         else:
             print("Request já realizado. Resultado: ")
-            print(server.recv(2048).decode())
+            print(status)
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
@@ -80,9 +80,13 @@ def history(server):
             line = f.read(1024)
         identifier = str(input('Digite o id que deseja refazer: '))
 
+        print("Reenviando id {0} para o servidor".format(identifier))
+
         header = "id:" + identifier
         server.send(header.encode())
 
+        print("Aguardando resposta do servidor...")
+        print("Resposta recebida do servidor, referente ao request com id {0}:".format(identifier))
         print(server.recv(1024).decode())
 
     else:
@@ -90,7 +94,7 @@ def history(server):
 
 
 def shutdown():
-    print("Obrigado por usar.")
+    print("Obrigado por usar. Vá tomar no cu.")
     exit(1)
 
 
