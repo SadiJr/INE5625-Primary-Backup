@@ -257,7 +257,7 @@ def connect(connection, client):
         elif message.__contains__("update") | message.__contains__("upload"):
             upload_or_update(connection, message)
         else:
-            connection.send("Erros na requisição. Vai tomar no cu".encode())
+            connection.send("Erros na requisição".encode())
             connection.close()
             break
 

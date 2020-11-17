@@ -17,7 +17,7 @@ def delete(server):
 
     server.send(headers.encode())
     answer = server.recv(1024).decode()
-
+    print(answer)
     write_history(str(last_id), answer)
 
 
@@ -54,7 +54,7 @@ def upload_or_update(server, action):
             write_history(last_id, answer)
         else:
             print("Request já realizado. Resultado: ")
-            print(server.recv(1024).decode())
+            print(server.recv(2048).decode())
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
@@ -90,7 +90,7 @@ def history(server):
 
 
 def shutdown():
-    print("Obrigado por usar. Vá tomar no cu.")
+    print("Obrigado por usar.")
     exit(1)
 
 
