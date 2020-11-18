@@ -24,6 +24,9 @@ def delete(server):
 def upload_or_update(server, action):
     file = str(input('Digite o caminho completo do arquivo: '))
 
+    while not verify_if_file_exists(file):
+        file = str(input("Arquivo não encontrado. Tente novamente: "))
+
     if verify_if_file_exists(file):
         server.setblocking(1)
         filename = os.path.split(file)[1]
@@ -94,11 +97,11 @@ def history(server):
 
 
 def shutdown():
-    print("Obrigado por usar. Vá tomar no cu.")
+    print("Obrigado por usar.")
     exit(1)
 
 
-def switch(choice, server):
+def switch(choice, server, is_detailed):
     if choice == 'u':
         upload(server)
     elif choice == 'd':
@@ -107,10 +110,22 @@ def switch(choice, server):
         update(server)
     elif choice == 'h':
         history(server)
+    elif choice == 't':
+        return not is_detailed
+    elif choice == 'r':
+        # Rodar testes e printar resultados
+        print("Rodando Testes Unitários")
     elif choice == 's':
         shutdown()
     else:
-        return 'Escolha não valida. Tente novamente'
+        print('Escolha não valida. Tente novamente')
+        choice = str(input('Escolha uma opção: '))
+        switch(choice, server, is_detailed)
+    return is_detailed
+
+
+def details():
+    return 1+1
 
 
 def is_socket_closed(sock) -> bool:
@@ -129,22 +144,58 @@ def is_socket_closed(sock) -> bool:
 
 def menu(server):
 
+    is_detailed = False
     while True:
         if is_socket_closed(server):
             print("Conexão com o servidor fechada. Necessário reiniciar aplicação")
             break
         else:
-            print('''
-                Menu:
-        
-                [u] - Fazer upload de arquivo
-                [d] - Deletar arquivo
-                [a] - Atualizar arquivo
-                [h] - Refazer operação
-                [s] - Sair
-                ''')
+
+            print_menu(is_detailed)
             choice = str(input('Escolha uma opção: '))
-            switch(choice, server)
+            is_detailed = switch(choice, server, is_detailed)
+
+
+def print_menu(is_detailed):
+    if not is_detailed:
+        print('''
+|------------------------------------------|
+        Menu:
+
+        [u] - Fazer upload de arquivo
+        [d] - Deletar arquivo
+        [a] - Atualizar arquivo
+        [h] - Refazer operação
+        [t] - Menu Detalhado
+        [r] - Rodar Testes Unitários
+        [s] - Sair
+|------------------------------------------|
+                ''')
+    else:
+        print('''
+|------------------------------------------------------------------------------------------------------------|
+        Menu:
+
+        [u] - Fazer upload de arquivo: Permite o envio de um arquivo para o servidor e seus backups. 
+        Requer a indicação do caminho do arquivo desejado.
+        
+        [d] - Deletar arquivo: Deleta o arquivo do servidor e de todos seus backups. 
+        Não deleta sua cópia do arquivo.
+        
+        [a] - Atualiza arquivo já presente no servidor e backups. Similar ao upload, 
+        mas para um arquivo que já exista.
+        
+        [h] - Refazer operação: Permite refazer uma operação realizada previamente, 
+        o resultado da opeação já é conhecido, então procesamento é poupado.
+        
+        [r] - Rodar Testes Unitários: Realiza os testes unitários,para garantir que todas funcionalidades 
+        funcionam corretamente. Importante para quando o programa é rodado pela primeira vez em uma máquina.
+        
+        [s] - Sair: Termina o programa.
+        
+        [t] Retornar ao menu Simplificado.
+|------------------------------------------------------------------------------------------------------------|
+                ''')
 
 
 def connect():
