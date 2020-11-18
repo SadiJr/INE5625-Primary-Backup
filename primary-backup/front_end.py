@@ -17,6 +17,7 @@ def delete(server):
 
     server.send(headers.encode())
     answer = server.recv(1024).decode()
+    print(answer)
 
     write_history(str(last_id), answer)
 
