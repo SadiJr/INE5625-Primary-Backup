@@ -24,6 +24,7 @@ def delete(server, path):
 
     server.send(headers.encode())
     answer = server.recv(1024).decode()
+    print(answer)
 
     write_history(str(last_id), answer)
     server.setblocking(0)
@@ -34,6 +35,9 @@ def upload_or_update(server, action, path):
         file = str(input('Digite o caminho completo do arquivo: '))
     else:
         file = path
+
+    while not verify_if_file_exists(file):
+        file = str(input("Arquivo não encontrado. Tente novamente: "))
 
     if verify_if_file_exists(file):
         server.setblocking(1)
@@ -116,19 +120,29 @@ def shutdown(server):
     exit(1)
 
 
-def switch(choice, server, argv):
+def switch(choice, server, argv, is_detailed):
     if choice == 'u' or choice == '-u':
         upload(server, argv)
     elif choice == 'd' or choice == '-d':
         delete(server, argv)
     elif choice == 'a' or choice == '-a':
         update(server, argv)
+    elif choice == 't' or choice == '-t':
+        return not is_detailed
+    elif choice == 'r' or choice == '-r':
+        # Rodar testes e printar resultados
+        print("Rodando Testes Unitários")
     elif choice == 'h' or choice == '-h':
         history(server, argv)
     elif choice == 's' or choice == '-s':
         shutdown(server)
     else:
         print('Escolha não válida. Tente novamente')
+    return is_detailed
+
+
+def details():
+    return 1+1
 
 
 def is_socket_closed(sock) -> bool:
@@ -146,22 +160,57 @@ def is_socket_closed(sock) -> bool:
 
 
 def menu(server):
+    is_detailed = False
     while True:
         if is_socket_closed(server):
             print("Conexão com o servidor fechada. Necessário reiniciar aplicação")
             break
         else:
-            print('''
-                Menu:
-        
-                [u] - Fazer upload de arquivo
-                [d] - Deletar arquivo
-                [a] - Atualizar arquivo
-                [h] - Refazer operação
-                [s] - Sair
-                ''')
+            print_menu(is_detailed)
             choice = str(input('Escolha uma opção: '))
-            switch(choice, server, None)
+            is_detailed = switch(choice, server, None, is_detailed)
+
+
+def print_menu(is_detailed):
+    if not is_detailed:
+        print('''
+|------------------------------------------|
+        Menu:
+
+        [u] - Fazer upload de arquivo
+        [d] - Deletar arquivo
+        [a] - Atualizar arquivo
+        [h] - Refazer operação
+        [t] - Menu Detalhado
+        [r] - Rodar Testes Unitários
+        [s] - Sair
+|------------------------------------------|
+                ''')
+    else:
+        print('''
+|------------------------------------------------------------------------------------------------------------|
+        Menu:
+
+        [u] - Fazer upload de arquivo: Permite o envio de um arquivo para o servidor e seus backups. 
+        Requer a indicação do caminho do arquivo desejado.
+        
+        [d] - Deletar arquivo: Deleta o arquivo do servidor e de todos seus backups. 
+        Não deleta sua cópia do arquivo.
+        
+        [a] - Atualiza arquivo já presente no servidor e backups. Similar ao upload, 
+        mas para um arquivo que já exista.
+        
+        [h] - Refazer operação: Permite refazer uma operação realizada previamente, 
+        o resultado da opeação já é conhecido, então procesamento é poupado.
+        
+        [r] - Rodar Testes Unitários: Realiza os testes unitários,para garantir que todas funcionalidades 
+        funcionam corretamente. Importante para quando o programa é rodado pela primeira vez em uma máquina.
+        
+        [s] - Sair: Termina o programa.
+        
+        [t] Retornar ao menu Simplificado.
+|------------------------------------------------------------------------------------------------------------|
+                ''')
 
 
 def connect():
@@ -212,7 +261,7 @@ def pass_args():
 
     while arg_length < len(opts[0]):
         arg = args[arg_length]
-        switch(arg[0], server, arg[1])
+        switch(arg[0], server, arg[1], None)
         arg_length += 1
 
 
