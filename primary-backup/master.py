@@ -221,6 +221,9 @@ def upload_or_update(connection, message):
     if not verify_if_request_exists(identifier, connection):
         if message.__contains__("update"):
             action = "atualizado"
+            if not verify_if_file_exists(filename):
+                connection.send("Arquivo ainda não criado. Utilize a opção de upload".encode())
+                return
         else:
             action = "criado"
             if verify_if_file_exists(filename):
@@ -273,8 +276,9 @@ def connect(connection, client):
             connection.close()
             break
 
-        if int(message.split(";")[1].split(":")[1]) % 10 == 0:
-            send_log_to_slaves()
+        # Isso está dando erros
+        #if int(message.split(";")[1].split(":")[1]) % 10 == 0:
+        #    send_log_to_slaves()
 
     print("Finalizando conexão com o cliente")
 

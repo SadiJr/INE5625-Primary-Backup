@@ -1,15 +1,22 @@
 import socket
 import os
 import configparser
+from builtins import print
+import sys
+import getopt
 
 
 def verify_if_file_exists(filename):
     return os.path.isfile(filename)
 
 
-def delete(server):
+def delete(server, path):
     server.setblocking(1)
-    file = str(input('Digite o nome do arquivo (apenas o nome, sem o caminho): '))
+
+    if path is None:
+        file = str(input('Digite o nome do arquivo (apenas o nome, sem o caminho): '))
+    else:
+        file = path
 
     server.send("get_last_id".encode())
     last_id = int(server.recv(256).decode()) + 1
@@ -19,10 +26,14 @@ def delete(server):
     answer = server.recv(1024).decode()
 
     write_history(str(last_id), answer)
+    server.setblocking(0)
 
 
-def upload_or_update(server, action):
-    file = str(input('Digite o caminho completo do arquivo: '))
+def upload_or_update(server, action, path):
+    if path is None:
+        file = str(input('Digite o caminho completo do arquivo: '))
+    else:
+        file = path
 
     if verify_if_file_exists(file):
         server.setblocking(1)
@@ -55,30 +66,35 @@ def upload_or_update(server, action):
         else:
             print("Request já realizado. Resultado: ")
             print(status)
+        server.setblocking(0)
     else:
         print("Arquivo não encontrado. Tente novamente.")
 
 
-def upload(server):
-    upload_or_update(server, "upload")
+def upload(server, argv):
+    upload_or_update(server, "upload", argv)
 
 
-def update(server):
-    upload_or_update(server, "update")
+def update(server, argv):
+    upload_or_update(server, "update", argv)
 
 
-def history(server):
+def history(server, user_id):
     server.setblocking(1)
     if verify_if_file_exists("history.log"):
         f = open("history.log", "r")
 
-        print("Digite o id que deseja refazer")
+        print("Lendo os logs do cliente...\n")
 
         line = f.read(1024)
         while line:
             print(line)
             line = f.read(1024)
-        identifier = str(input('Digite o id que deseja refazer: '))
+
+        if user_id is None:
+            identifier = str(input('Digite o id que deseja refazer: '))
+        else:
+            identifier = user_id
 
         print("Reenviando id {0} para o servidor".format(identifier))
 
@@ -91,26 +107,28 @@ def history(server):
 
     else:
         print("Não foram realizadas operações anteriores")
+    server.setblocking(0)
 
 
-def shutdown():
-    print("Obrigado por usar. Vá tomar no cu.")
+def shutdown(server):
+    print("Obrigado por usar.")
+    server.close()
     exit(1)
 
 
-def switch(choice, server):
-    if choice == 'u':
-        upload(server)
-    elif choice == 'd':
-        delete(server)
-    elif choice == 'a':
-        update(server)
-    elif choice == 'h':
-        history(server)
-    elif choice == 's':
-        shutdown()
+def switch(choice, server, argv):
+    if choice == 'u' or choice == '-u':
+        upload(server, argv)
+    elif choice == 'd' or choice == '-d':
+        delete(server, argv)
+    elif choice == 'a' or choice == '-a':
+        update(server, argv)
+    elif choice == 'h' or choice == '-h':
+        history(server, argv)
+    elif choice == 's' or choice == '-s':
+        shutdown(server)
     else:
-        return 'Escolha não valida. Tente novamente'
+        print('Escolha não válida. Tente novamente')
 
 
 def is_socket_closed(sock) -> bool:
@@ -128,7 +146,6 @@ def is_socket_closed(sock) -> bool:
 
 
 def menu(server):
-
     while True:
         if is_socket_closed(server):
             print("Conexão com o servidor fechada. Necessário reiniciar aplicação")
@@ -144,7 +161,7 @@ def menu(server):
                 [s] - Sair
                 ''')
             choice = str(input('Escolha uma opção: '))
-            switch(choice, server)
+            switch(choice, server, None)
 
 
 def connect():
@@ -156,20 +173,24 @@ def connect():
     server_ip = details_dict['ip']
     server_port = details_dict['port']
 
+    print("Tentando iniciar conexão com o master no host {0} e porta {1}".format(server_ip, server_port))
+
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.settimeout(10)
     server.connect((server_ip, int(server_port)))
+
+    print("Conexão com o master estabelecida com sucesso!")
     return server
 
 
 def init():
-    server = ''
     try:
         server = connect()
         menu(server)
     except socket.error as e:
         print("Erro ao tentar conectar com o servidor", str(e))
-    finally:
-        server.close()
+        print("Tentando conexão novamente")
+        init()
 
 
 def write_history(id_request, action):
@@ -180,5 +201,23 @@ def write_history(id_request, action):
     f.close()
 
 
+def pass_args():
+    server = connect()
+    argv = sys.argv[1:]
+
+    opts = getopt.getopt(argv, 'u:a:d:h:s')
+
+    arg_length = 0
+    args = opts[0]
+
+    while arg_length < len(opts[0]):
+        arg = args[arg_length]
+        switch(arg[0], server, arg[1])
+        arg_length += 1
+
+
 if __name__ == '__main__':
-    init()
+    if len(sys.argv) == 1:
+        init()
+    else:
+        pass_args()
