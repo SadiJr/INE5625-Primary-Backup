@@ -9,5 +9,6 @@ Repositório contendo a trabalho prático da disciplina INE5625, consistindo na 
 * Melhorar o menu do client, colocando uma opção para rodar os testes unitários e uma para listar detalhadamente cada opção disponível.
 * Testar cada funcionalidade.
 * Escrever o relatório
+* Implementar fila na conexão client-master
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/SadiJr/INE5625-Primary-Backup/blob/main/LICENSE)
