@@ -38,5 +38,41 @@
 			{2020}
 		\end{center}
 	\end{titlepage}
-
+\newpage
+	
+	\section{\normalsize INTRODUÇÃO}
+		Para o trabalho, foi feita a implementação simples de um sistema de replicação passiva (backup primário), seguindo as cinco fases de comunicação entre \textit{front-end} e gerenciadores de réplica.
+		
+	\section{\normalsize IMPLEMENTAÇÃO}
+		O projeto foi feito usando a linguagem Python, usando \textit{sockets} para a comunicação entre os processos. Ao todo, existem três processos, cada qual contido em seu respectivo \textit{script} .py, que simulam os atores do sistema:
+		
+		\begin{itemize}
+			\item \textbf{front\_end.py:}\\Simula o \textit{front-end}, realiza a comunicação do cliente com o servidor principal. Para isso, tal processo se conecta ao servidor principal\footnote{A partir desse ponto, o servidor principal será chamado de servidor \textit{master} ou apenas \textit{master}} através de \textit{sockets} e das configurações lidas no arquivo \textit{ips.conf}. Possui uma interface de usuário em modo texto, com a possibilidade de receber \textit{inputs} do usuário, além de também ser possível receber parâmetros da linha de comando. O \textit{front-end} permite fazer requisições de envio (\textit{upload}), atualização (\textit{update}) e deleção (\textit{delete}) de arquivos para o servidor principal (\textit{master.py}). Além disso, é possível pedir que requisições já feitas sejam refeitas. Por fim, é possível rodar os testes unitários, para checar a saúde do programa (recomendado quando for rodado pela primeira vez numa máquina), e abrir um menu com mais detalhes sobre cada opção.
+				
+				\includegraphics[scale=.7]{pictures/image1.png}
+			
+			\item \textbf{master.py:}\\Simula o gerenciador de réplica primário. O \textit{master} é configurado por meio de um arquivo de configuração chamado \textit{ips.conf}. Ele busca tenta conectar-se aos servidores de backup (\textit{slaves.py}) antes de começar a receber conexões de clientes. Caso ele apenas consiga se conectar com menos da metade dos backups esperados, ele cancela o processo e desliga. Caso isso não aconteça, o servidor inicia, e aguarda requisição dos clientes, sendo que apenas um cliente pode executar uma operação por vez. As requisições recebidas (\textit{update}, \textit{upload}, \textit{delete}) são executadas no \textit{master} e mandadas para os backups, para que eles as executem também. O resultado da operação é mandado de volta para o cliente que fez a requisição.\\
+				\includegraphics[scale=.7]{pictures/image2.png}
+				
+			\item \textbf{slave.py:}\\Simula um gerenciador de réplica secundário. Ele roda como um servidor, seguindo as especificações de um arquivo de configuração personalizado (\textit{slave.conf}), e espera a conexão do \textit{master}. O \textit{slave} recebe requisições do \textit{master}, as executa, e retorna seu resultado para o \textit{master}.\\
+				\includegraphics[scale=.7]{pictures/image3.png}
+		\end{itemize}
+	
+	\section{\normalsize INSTRUÇÕES DE USO}
+		O projeto foi feito pensando em executá-lo em máquinas diferentes, mas, também é possível rodar a aplicação em uma única máquina, desde que cada processo esteja em um diretório diferente, e os processos que servem como servidores de backup utilizem portas disponíveis e não repetidas.
+		
+		Independente de como será feita a execução da aplicação, localmente ou remotamente, é importante ter em mente que os arquivos de configuração de cada um dos processos desse ser editado, para satisfazer a configuração real na qual a aplicação irá rodar\footnote{Isso quer dizer, editar os arquivos de configuração para indicar corretamente os \textit{hosts} utilizados e as portas nas quais os servidores de \textit{backup} serão inicializados.}.
+	
+	\section{\normalsize FASES DE COMUNICAÇÃO}
+		\begin{enumerate}
+			\item \textbf{Requisição:} O usuário escolhe o comando que deseja, digitando a letra do comando e o nome ou o caminho do arquivo. Antes da requisição do usuário em si ser enviada para o \textit{master}, é enviada uma requisição especial, \textit{get\_last\_id} que pede ao \textit{master} o \textit{id} da última requisição, para que esta nova operação tenha seu próprio \textit{id} único. Assim que o \textit{id} é recebido, a requisição do usuário  é enviada para o \textit{master} com um novo \textit{id}\footnote{id = get\_last\_id + 1} único.
+			
+			\item \textbf{Coordenação:} O \textit{master}, após ter enviado o último \textit{id}, recebe a requisição do \textit{front-end}. Então, começa a executar localmente tal requisição, após ter finalizado seu processo local, o \textit{master} então envia a requisição para os gerenciadores secundários (\textit{slaves}).
+			
+			\item \textbf{Execução:} Os os gerenciadores secundários recebem as ordens do \textit{master} e as executam, enviando o resultado da execução, seja ele um sucesso ou falha, para o \textit{master}.
+			
+			\item \textbf{Acordo:} O \textit{master}, recebendo os resultados dos \textit{slaves}, e tendo tido sucesso em sua própria execução, decide se a operação no geral foi um sucesso ou não da seguinte forma: Se pelo menos a maioria dos servidores (mais da metade), responderem com falha, a operação falha, se responderem com sucesso, é um sucesso.
+			
+			\item \textbf{Resposta:} O \textit{master} envia ao \textit{front-end} o resultado da operação baseada no acordo. 
+		\end{enumerate}
 \end{document}
