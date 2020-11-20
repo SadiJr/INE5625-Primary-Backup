@@ -49,13 +49,13 @@
 		\begin{itemize}
 			\item \textbf{front\_end.py:}\\Simula o \textit{front-end}, realiza a comunicação do cliente com o servidor principal. Para isso, tal processo se conecta ao servidor principal\footnote{A partir desse ponto, o servidor principal será chamado de servidor \textit{master} ou apenas \textit{master}} através de \textit{sockets} e das configurações lidas no arquivo \textit{ips.conf}. Possui uma interface de usuário em modo texto, com a possibilidade de receber \textit{inputs} do usuário, além de também ser possível receber parâmetros da linha de comando. O \textit{front-end} permite fazer requisições de envio (\textit{upload}), atualização (\textit{update}) e deleção (\textit{delete}) de arquivos para o servidor principal (\textit{master.py}). Além disso, é possível pedir que requisições já feitas sejam refeitas. Por fim, é possível rodar os testes unitários, para checar a saúde do programa (recomendado quando for rodado pela primeira vez numa máquina), e abrir um menu com mais detalhes sobre cada opção.
 				
-				\includegraphics[scale=.7]{pictures/image1.png}
+				\includegraphics[scale=.7]{pictures/image3.png}
 			
 			\item \textbf{master.py:}\\Simula o gerenciador de réplica primário. O \textit{master} é configurado por meio de um arquivo de configuração chamado \textit{ips.conf}. Ele busca tenta conectar-se aos servidores de backup (\textit{slaves.py}) antes de começar a receber conexões de clientes. Caso ele apenas consiga se conectar com menos da metade dos backups esperados, ele cancela o processo e desliga. Caso isso não aconteça, o servidor inicia, e aguarda requisição dos clientes, sendo que apenas um cliente pode executar uma operação por vez. As requisições recebidas (\textit{update}, \textit{upload}, \textit{delete}) são executadas no \textit{master} e mandadas para os backups, para que eles as executem também. O resultado da operação é mandado de volta para o cliente que fez a requisição.\\
-				\includegraphics[scale=.7]{pictures/image2.png}
+				\includegraphics[scale=.7]{pictures/image1.png}
 				
 			\item \textbf{slave.py:}\\Simula um gerenciador de réplica secundário. Ele roda como um servidor, seguindo as especificações de um arquivo de configuração personalizado (\textit{slave.conf}), e espera a conexão do \textit{master}. O \textit{slave} recebe requisições do \textit{master}, as executa, e retorna seu resultado para o \textit{master}.\\
-				\includegraphics[scale=.7]{pictures/image3.png}
+				\includegraphics[scale=.7]{pictures/image2.png}
 		\end{itemize}
 	
 	\section{\normalsize INSTRUÇÕES DE USO}
