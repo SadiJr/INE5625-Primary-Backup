@@ -277,8 +277,8 @@ def connect(connection, client):
             break
 
         # Isso está dando erros
-        #if int(message.split(";")[1].split(":")[1]) % 10 == 0:
-        #    send_log_to_slaves()
+        if int(message.split(";")[1].split(":")[1]) % 10 == 0:
+            send_log_to_slaves()
 
     print("Finalizando conexão com o cliente")
 
@@ -291,13 +291,18 @@ def send_log_to_slaves():
             header = f"history;{filesize}"
             conn.send(header.encode())
 
-            f = open("updates.log", "rb")
-            line = f.read(1024)
+            status = conn.recv(16).decode()
 
-            while line:
-                conn.send(line)
+            if status == "OK":
+                f = open("updates.log", "rb")
                 line = f.read(1024)
-            f.close()
+
+                while line:
+                    conn.send(line)
+                    line = f.read(1024)
+                f.close()
+            else:
+                print("Erro ao mandar arquivo de log para o backup {0}".format(conn.getsockname()))
         except Exception:
             print("Erro ao mandar arquivo de log para o backup {0}".format(conn.getsockname()))
 

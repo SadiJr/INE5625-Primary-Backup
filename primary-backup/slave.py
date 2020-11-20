@@ -79,6 +79,7 @@ def backup(connection):
         elif request.__contains__("history"):
             print("Iniciando backup do log do master...")
             filesize = request.split(";")[1]
+            connection.send(b"OK")
             connection.send(save_history(connection, filesize).encode())
         else:
             filename = request.split(";")[0]

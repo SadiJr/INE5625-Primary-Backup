@@ -13,10 +13,14 @@ def verify_if_file_exists(filename):
 def delete(server, path):
     server.setblocking(1)
 
+    print("Iniciando processo de deletar arquivos...")
+
     if path is None:
         file = str(input('Digite o nome do arquivo (apenas o nome, sem o caminho): '))
     else:
         file = path
+
+    print(f"O arquivo a ser deletado é {file}")
 
     server.send("get_last_id".encode())
     last_id = int(server.recv(256).decode()) + 1
