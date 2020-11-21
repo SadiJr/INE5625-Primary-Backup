@@ -80,14 +80,18 @@ def upload_or_update(server, action, path):
 
 
 def upload(server, argv):
+    print("Iniciando processo de upload")
     upload_or_update(server, "upload", argv)
 
 
 def update(server, argv):
+    print("Iniciando processo de update")
     upload_or_update(server, "update", argv)
 
 
 def history(server, user_id):
+    print("Verificando operações já feitas...")
+
     server.setblocking(1)
     if verify_if_file_exists("history.log"):
         f = open("history.log", "r")

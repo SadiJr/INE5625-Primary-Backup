@@ -80,11 +80,12 @@ def write_log(client_id, answer):
     f.flush()
 
 
-def send_data_to_slaves(filename, filesize):
+def send_data_to_slaves(filename, filesize, identifier):
+    print(f"Enviando arquivo {filename} para os slaves")
     responses = []
     for conn in connections:
         try:
-            header = f"{filename};{filesize}"
+            header = f"{filename};{filesize};{identifier}"
             conn.send(header.encode())
             # conn.settimeout(5.0)
             response = conn.recv(16).decode()
@@ -124,8 +125,9 @@ def receive_file(connection, filename, filesize, identifier, action):
 
     receive_size = 0
 
-    while receive_size != filesize:
+    print(f"Iniciando recepção do arquivo {filename}")
 
+    while receive_size != filesize:
         line = connection.recv(1024)
         if not line:
             break
@@ -135,9 +137,10 @@ def receive_file(connection, filename, filesize, identifier, action):
 
     file.flush()
     file.close()
-    print("Arquivo recebido!")
-    answer = send_data_to_slaves(filename, filesize)
 
+    print(f"Arquivo {filename} recebido com sucesso!")
+
+    answer = send_data_to_slaves(filename, filesize, identifier)
     status = verify_slaves_success(answer)
 
     if len(answer) < (len(connections) / 2) or status[0] < status[1]:
@@ -155,13 +158,13 @@ def verify_if_file_exists(filename):
     return os.path.isfile(filename)
 
 
-def send_delete_request_to_slaves(filename):
+def send_delete_request_to_slaves(filename, identifier):
     print("Enviando ordens aos slaves para deletar o arquivo {0}".format(filename))
 
     responses = []
     for conn in connections:
         try:
-            message = "delete;" + filename
+            message = f"delete;{filename};{identifier}"
             conn.send(message.encode())
             conn.settimeout(5.0)
 
@@ -182,7 +185,7 @@ def delete(connection, data):
         if verify_if_file_exists(filename):
             os.remove(filename)
 
-            responses = send_delete_request_to_slaves(filename)
+            responses = send_delete_request_to_slaves(filename, identifier)
 
             status = verify_slaves_success(responses)
             if len(responses) < (len(connections) / 2) or status[0] < status[1]:

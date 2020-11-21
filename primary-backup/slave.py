@@ -27,12 +27,13 @@ def save_history(connection, filesize):
 def create_or_update(connection, request):
     filename = str(request).split(";")[0]
     filesize = int(str(request).split(";")[1])
+    identifier = str(request).split(";")[2]
 
+    print(f"Iniciando recebidomento do arquivo {filename} com identificador {identifier}")
     try:
         file = open(filename, "wb")
 
         receive_size = 0
-
         while receive_size != filesize:
             line = connection.recv(1024)
             print("Linha recebida: " + str(line))
@@ -51,6 +52,9 @@ def create_or_update(connection, request):
 def delete(request):
     try:
         filename = request.split(';')[1]
+        identifier = request.split(';')[2]
+
+        print(f"Iniciando tentativa de deletar o arquivo {filename}. Identificador da operação {identifier}")
         os.remove(filename)
 
         print("Arquivo {0} removido com sucesso!".format(filename))
