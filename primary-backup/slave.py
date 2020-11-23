@@ -3,6 +3,18 @@ import sys
 import configparser
 import os
 import traceback
+import tempfile
+from shutil import copyfile
+
+tmpdir = tempfile.TemporaryDirectory()
+
+
+def roolback():
+    print(f"Realizando rollback...")
+    for file in os.listdir(tmpdir.name):
+        copyfile(tmpdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
+    print("Rollaback realizado com sucesso! Limpando diretório temporário")
+    tmpdir.cleanup()
 
 
 def save_history(connection, filesize):
@@ -19,17 +31,28 @@ def save_history(connection, filesize):
 
         print("Backup dos logs do master realizado com sucesso!")
         return "200"
-    except Exception as e:
+    except Exception:
         print("Ocorreu um erro ao fazer o backup dos logs do master. Erro: {0}".format(traceback.print_exc()))
         return "500"
 
 
 def create_or_update(connection, request):
+    print("Limpando diretório temporário")
+    tmpdir.cleanup()
+
     filename = str(request).split(";")[0]
     filesize = int(str(request).split(";")[1])
     identifier = str(request).split(";")[2]
 
     print(f"Iniciando recebidomento do arquivo {filename} com identificador {identifier}")
+
+    try:
+        print(f"Iniciando backup do arquivo original {filename}, caso exista...")
+        copyfile(filename, (tmpdir.name + os.path.sep + filename))
+        print("Backup realizado com sucesso!")
+    except FileNotFoundError:
+        print(f"Arquivo {filename} não encontrado no servidor, abortando!")
+
     try:
         file = open(filename, "wb")
 
@@ -51,13 +74,19 @@ def create_or_update(connection, request):
 
 def delete(request):
     try:
+        print("Limpando diretório temporário")
+        tmpdir.cleanup()
+
         filename = request.split(';')[1]
         identifier = request.split(';')[2]
 
         print(f"Iniciando tentativa de deletar o arquivo {filename}. Identificador da operação {identifier}")
+
+        print(f"Realizando backup do arquivo {filename} para posterior necessidade de rollback")
+        copyfile(filename, (tmpdir.name + os.path.sep + filename))
         os.remove(filename)
 
-        print("Arquivo {0} removido com sucesso!".format(filename))
+        print(f"Arquivo {filename} removido com sucesso!")
         return "200"
     except FileNotFoundError as msg:
         print("Erro ao remover o arquivo {0}!".format(filename))
@@ -85,6 +114,8 @@ def backup(connection):
             filesize = request.split(";")[1]
             connection.send(b"OK")
             connection.send(save_history(connection, filesize).encode())
+        elif request.__contains__("roolback"):
+            roolback()
         else:
             filename = request.split(";")[0]
             print("Iniciando recebimento do arquivo {0}".format(filename))
