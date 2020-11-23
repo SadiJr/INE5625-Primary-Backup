@@ -12,15 +12,15 @@ from shutil import copyfile
 config = configparser.RawConfigParser()
 config.read('ips.conf')
 connections = []
-tmpdir = tempfile.TemporaryDirectory()
+tempdir = tempfile.TemporaryDirectory()
 
 
-def roolback():
+def rollback():
     print(f"Realizando rollback...")
-    for file in os.listdir(tmpdir.name):
-        copyfile(tmpdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
+    for file in os.listdir(tempdir.name):
+        copyfile(tempdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
     print("Rollaback realizado com sucesso! Limpando diretório temporário")
-    tmpdir.cleanup()
+    tempdir.cleanup()
 
     for conn in connections:
         print(f"Enviando ordem de rollback para {conn.getsockname}")
@@ -30,7 +30,7 @@ def roolback():
             conn.send(message.encode())
             conn.settimeout(5.0)
         except Exception:
-            print("Erro ao tentar enviar request de delete para o servidor {0}".format(conn.getsockname()))
+            print("Erro ao tentar enviar request de rollback para o servidor {0}".format(conn.getsockname()))
 
 
 def get_config_section():
@@ -170,7 +170,7 @@ def receive_file(connection, filename, filesize, identifier, action):
             os.remove(filename)
             send_delete_request_to_slaves(filename)
         else:
-            roolback()
+            rollback()
         connection.send("Erro ao realizar transição. Tente novamente".encode())
         return
 
@@ -202,7 +202,7 @@ def send_delete_request_to_slaves(filename, identifier):
 
 
 def delete(connection, data):
-    tmpdir.cleanup()
+    tempdir.cleanup()
 
     identifier = str(data).split(';')[1].split(':')[1]
     filename = str(data).split(';')[2].split(':')[1]
@@ -212,8 +212,8 @@ def delete(connection, data):
     if not verify_if_request_exists(identifier, connection):
         if verify_if_file_exists(filename):
 
-            print(f"Fazendo backup do arquivo {filename} em um diretório temporário para necessidade de roolback!")
-            copyfile(filename, (tmpdir.name + os.path.sep + filename))
+            print(f"Fazendo backup do arquivo {filename} em um diretório temporário para necessidade de rollback!")
+            copyfile(filename, (tempdir.name + os.path.sep + filename))
 
             os.remove(filename)
 
@@ -224,7 +224,7 @@ def delete(connection, data):
                 print("A maioria dos servidores de backup não respondeu a requisição de deletar o arquivo "
                       " ou respondeu com erro na operação")
 
-                roolback()
+                rollback()
                 connection.send("Erro ao realizar operação de deletar o arquivo".encode())
             else:
                 connection.send("Arquivo deletado com sucesso".encode())
@@ -244,7 +244,7 @@ def get_last_id():
 
 
 def upload_or_update(connection, message):
-    tmpdir.cleanup()
+    tempdir.cleanup()
 
     identifier, filename,  = "", ""
     filesize = 0
@@ -366,7 +366,7 @@ def init_server():
         init_server()
         return
 
-    print(f"Diretório temporário {tmpdir} será usado para tratar rollbacks")
+    print(f"Diretório temporário {tempdir} será usado para tratar rollbacks")
 
     sock.listen(1)
 

@@ -6,15 +6,15 @@ import traceback
 import tempfile
 from shutil import copyfile
 
-tmpdir = tempfile.TemporaryDirectory()
+tempdir = tempfile.TemporaryDirectory()
 
 
-def roolback():
+def rollback():
     print(f"Realizando rollback...")
-    for file in os.listdir(tmpdir.name):
-        copyfile(tmpdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
+    for file in os.listdir(tempdir.name):
+        copyfile(tempdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
     print("Rollaback realizado com sucesso! Limpando diretório temporário")
-    tmpdir.cleanup()
+    tempdir.cleanup()
 
 
 def save_history(connection, filesize):
@@ -38,7 +38,7 @@ def save_history(connection, filesize):
 
 def create_or_update(connection, request):
     print("Limpando diretório temporário")
-    tmpdir.cleanup()
+    tempdir.cleanup()
 
     filename = str(request).split(";")[0]
     filesize = int(str(request).split(";")[1])
@@ -48,7 +48,7 @@ def create_or_update(connection, request):
 
     try:
         print(f"Iniciando backup do arquivo original {filename}, caso exista...")
-        copyfile(filename, (tmpdir.name + os.path.sep + filename))
+        copyfile(filename, (tempdir.name + os.path.sep + filename))
         print("Backup realizado com sucesso!")
     except FileNotFoundError:
         print(f"Arquivo {filename} não encontrado no servidor, abortando!")
@@ -75,7 +75,7 @@ def create_or_update(connection, request):
 def delete(request):
     try:
         print("Limpando diretório temporário")
-        tmpdir.cleanup()
+        tempdir.cleanup()
 
         filename = request.split(';')[1]
         identifier = request.split(';')[2]
@@ -83,7 +83,7 @@ def delete(request):
         print(f"Iniciando tentativa de deletar o arquivo {filename}. Identificador da operação {identifier}")
 
         print(f"Realizando backup do arquivo {filename} para posterior necessidade de rollback")
-        copyfile(filename, (tmpdir.name + os.path.sep + filename))
+        copyfile(filename, (tempdir.name + os.path.sep + filename))
         os.remove(filename)
 
         print(f"Arquivo {filename} removido com sucesso!")
@@ -114,8 +114,8 @@ def backup(connection):
             filesize = request.split(";")[1]
             connection.send(b"OK")
             connection.send(save_history(connection, filesize).encode())
-        elif request.__contains__("roolback"):
-            roolback()
+        elif request.__contains__("rollback"):
+            rollback()
         else:
             filename = request.split(";")[0]
             print("Iniciando recebimento do arquivo {0}".format(filename))
