@@ -5,6 +5,8 @@ from builtins import print
 import sys
 import getopt
 
+from tests import test
+
 
 def verify_if_file_exists(filename):
     return os.path.isfile(filename)
@@ -138,8 +140,8 @@ def switch(choice, server, argv, is_detailed):
     elif choice == 't' or choice == '-t':
         return not is_detailed
     elif choice == 'r' or choice == '-r':
-        # Rodar testes e printar resultados
         print("Rodando Testes Unitários")
+        os.system('python tests/test.py')
     elif choice == 'h' or choice == '-h':
         history(server, argv)
     elif choice == 's' or choice == '-s':
