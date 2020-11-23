@@ -15,15 +15,20 @@ connections = []
 tempdir = tempfile.TemporaryDirectory()
 
 
+def remove_tmp_files():
+    for file in os.listdir(tempdir.name):
+        os.remove(tempdir.name + os.path.sep + file)
+
+
 def rollback():
     print(f"Realizando rollback...")
     for file in os.listdir(tempdir.name):
-        copyfile(tempdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
+        copyfile((tempdir.name + os.path.sep + file), (os.path.abspath(os.path.curdir) + os.path.sep + file))
     print("Rollaback realizado com sucesso! Limpando diretório temporário")
-    tempdir.cleanup()
+    remove_tmp_files()
 
     for conn in connections:
-        print(f"Enviando ordem de rollback para {conn.getsockname}")
+        print(f"Enviando ordem de rollback para {conn.getsockname()}")
 
         try:
             message = f"rollback"
@@ -132,7 +137,7 @@ def verify_slaves_success(answers):
     success, fail = 0, 0
 
     for a in answers:
-        if a == "500":
+        if a == "500" or a == '':
             fail += 1
         else:
             success += 1
@@ -141,9 +146,14 @@ def verify_slaves_success(answers):
 
 
 def receive_file(connection, filename, filesize, identifier, action):
-    print("Filename: " + filename + " - id: " + identifier + " - filesize: " + str(filesize))
-    file = open(filename, "wb")
+    try:
+        print(f"Iniciando backup do arquivo original {filename}, caso exista...")
+        copyfile(filename, (tempdir.name + os.path.sep + filename))
+        print("Backup realizado com sucesso!")
+    except FileNotFoundError:
+        print(f"Arquivo {filename} não encontrado no servidor, abortando!")
 
+    file = open(filename, "wb")
     receive_size = 0
 
     print(f"Iniciando recepção do arquivo {filename}")
@@ -168,7 +178,7 @@ def receive_file(connection, filename, filesize, identifier, action):
         print("Erro ao receber respostas dos slaves. Abortando operação...")
         if action == "criado":
             os.remove(filename)
-            send_delete_request_to_slaves(filename)
+            send_delete_request_to_slaves(filename, identifier)
         else:
             rollback()
         connection.send("Erro ao realizar transição. Tente novamente".encode())
@@ -192,7 +202,6 @@ def send_delete_request_to_slaves(filename, identifier):
         try:
             message = f"delete;{filename};{identifier}"
             conn.send(message.encode())
-            conn.settimeout(5.0)
 
             responses.append(conn.recv(1024).decode())
         except Exception:
@@ -202,7 +211,7 @@ def send_delete_request_to_slaves(filename, identifier):
 
 
 def delete(connection, data):
-    tempdir.cleanup()
+    remove_tmp_files()
 
     identifier = str(data).split(';')[1].split(':')[1]
     filename = str(data).split(';')[2].split(':')[1]
@@ -244,7 +253,7 @@ def get_last_id():
 
 
 def upload_or_update(connection, message):
-    tempdir.cleanup()
+    remove_tmp_files()
 
     identifier, filename,  = "", ""
     filesize = 0
@@ -315,9 +324,9 @@ def connect(connection, client):
             connection.close()
             break
 
-        # Isso está dando erros
-        if int(message.split(";")[1].split(":")[1]) % 10 == 0:
-            send_log_to_slaves()
+        # Isso é desnecessário
+        #if int(message.split(";")[1].split(":")[1]) % 10 == 0:
+        #    send_log_to_slaves()
 
     print("Finalizando conexão com o cliente")
 
@@ -362,9 +371,7 @@ def init_server():
         sock.bind(server_address)
     except socket.error as msg:
         print("Erro ao fazer o bind do socket. Porta já ocupada")
-        print("Tentando reiniciar servidor")
-        init_server()
-        return
+        sys.exit()
 
     print(f"Diretório temporário {tempdir} será usado para tratar rollbacks")
 

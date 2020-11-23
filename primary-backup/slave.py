@@ -12,9 +12,9 @@ tempdir = tempfile.TemporaryDirectory()
 def rollback():
     print(f"Realizando rollback...")
     for file in os.listdir(tempdir.name):
-        copyfile(tempdir.name + os.path.sep + file, os.path.abspath(os.path.curdir) + file)
+        copyfile((tempdir.name + os.path.sep + file), (os.path.abspath(os.path.curdir) + os.path.sep + file))
     print("Rollaback realizado com sucesso! Limpando diretório temporário")
-    tempdir.cleanup()
+    remove_tmp_files()
 
 
 def save_history(connection, filesize):
@@ -38,7 +38,7 @@ def save_history(connection, filesize):
 
 def create_or_update(connection, request):
     print("Limpando diretório temporário")
-    tempdir.cleanup()
+    remove_tmp_files()
 
     filename = str(request).split(";")[0]
     filesize = int(str(request).split(";")[1])
@@ -72,10 +72,15 @@ def create_or_update(connection, request):
         return "500"
 
 
+def remove_tmp_files():
+    for file in os.listdir(tempdir.name):
+        os.remove(tempdir.name + os.path.sep + file)
+
+
 def delete(request):
     try:
         print("Limpando diretório temporário")
-        tempdir.cleanup()
+        remove_tmp_files()
 
         filename = request.split(';')[1]
         identifier = request.split(';')[2]
@@ -147,7 +152,7 @@ def init_slave():
         sock.bind(server_address)
         print("Servidor iniciado com sucesso!")
     except socket.error as msg:
-        print("Erro ao fazer o bind do socket. Código do Erro: {0} - Mensagem: {1}".format(msg[0], msg[1]))
+        print("Erro ao fazer o bind do socket. Porta já em uso")
         sys.exit(1)
 
     sock.listen(1)
