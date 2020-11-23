@@ -131,8 +131,10 @@ def backup(connection):
 
 
 def init_slave():
+    current_path = os.getcwd()
+    print(current_path)
     config = configparser.RawConfigParser()
-    config.read('slave.conf')
+    config.read(os.path.basename(current_path) + '/' + 'slave.conf')
 
     print("Lendo configurações do servidor slave")
 
