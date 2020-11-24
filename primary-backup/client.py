@@ -9,7 +9,7 @@ def pass_args():
     server = connect()
     argv = sys.argv[1:]
 
-    opts = getopt.getopt(argv, 'u:d:st')
+    opts = getopt.getopt(argv, 'u:d:s')
 
     arg_length = 0
     args = opts[0]
@@ -72,7 +72,6 @@ def print_menu(is_detailed):
         [u] - Fazer upload de arquivo
         [d] - Deletar arquivo
         [h] - Histórico
-        [r] - Rodar Testes Unitários
         [t] - Menu Detalhado
         [s] - Sair
 |------------------------------------------|
@@ -89,9 +88,6 @@ def print_menu(is_detailed):
         Não deleta sua cópia do arquivo.
         
         [h] - Exibir o histórico das operações já realizadas
-        
-        [r] - Rodar Testes Unitários: Realiza os testes unitários,para garantir que todas funcionalidades 
-        funcionam corretamente. Importante para quando o programa é rodado pela primeira vez em uma máquina.
         
         [s] - Sair: Termina o programa.
 
@@ -207,8 +203,6 @@ def switch(choice, server, argv, is_detailed):
         return not is_detailed
     elif choice == 's' or choice == '-s':
         shutdown(server)
-    elif choice == 'r' or choice == '-r':
-        os.system('python tests/test.py')
     elif choice == 'h' or choice == '-h':
         view_history(server)
     else:

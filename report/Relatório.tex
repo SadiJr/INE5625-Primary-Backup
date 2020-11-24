@@ -59,6 +59,9 @@
 				
 			\item \textbf{slave.py:}\\Simula um gerenciador de réplica secundário. Ele roda como um servidor, seguindo as especificações de um arquivo de configuração personalizado (\textit{slave.conf}), e espera a conexão do \textit{master}. O \textit{slave} recebe requisições do \textit{master}, as executa, e retorna seu resultado para o \textit{master}. Também pode fazer \textit{rollback}, caso receba tal ordem do \textit{master}, além de também receber cópias periódicas do arquivo de \textit{log} do \textit{master}.\\
 				\includegraphics[scale=.5]{pictures/04.png}
+			
+			\item \textbf{test.py:}\\Executa testes automatizados. Para isso, precisa que todos os serviços (\textit{slaves}, \textit{master} e \textit{front-end}) estejam de pé. Para facilitar tal execução, no diretório de \textit{tests} existem os arquivos necessários, já separados em diretórios e já configurados.\\
+			\includegraphics[scale=.5]{pictures/05.png}
 		\end{itemize}
 	
 	\section{\normalsize INSTRUÇÕES DE USO}
