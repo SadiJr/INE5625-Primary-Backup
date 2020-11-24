@@ -182,7 +182,11 @@ def view_history(server):
     server.setblocking(1)
 
     server.send(b'history')
-    size = int(server.recv(32))
+    response = server.recv(32)
+    if response == b'' or response == b'0':
+        print("Não existem operações salvas")
+        return
+    size = int(response)
     server.send(b'OK')
 
     receive = 0

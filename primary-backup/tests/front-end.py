@@ -6,7 +6,7 @@ import collections
 import tempfile
 import traceback
 import os
-
+from pathlib import Path
 
 config = configparser.RawConfigParser()
 config.read('ips.conf')
@@ -21,11 +21,14 @@ def write_history(result):
 
 
 def send_history(client):
-    f = open('history.log', 'rb')
-    line = f.read(1024)
-    while line:
-        client.send(line)
+    if Path("history.log").is_file() and os.stat("history.log").st_size > 0:
+        f = open('history.log', 'rb')
         line = f.read(1024)
+        while line:
+            client.send(line)
+            line = f.read(1024)
+    else:
+        client.send(b'')
 
 
 def get_config_section():
@@ -77,8 +80,12 @@ def treat_message(client, message, master):
 
             client.send(send_to_master(tmpfile, identifier, filename, filesize, master).encode())
     elif message.__eq__("history"):
-        size = str(os.path.getsize('history.log'))
-        client.send(size.encode())
+        if Path("history.log").is_file() and os.stat("history.log").st_size > 0:
+            size = str(os.path.getsize('history.log'))
+            client.send(size.encode())
+        else:
+            client.send(b'0')
+            return
 
         if client.recv(16).decode() == "OK":
             send_history(client)
@@ -123,7 +130,7 @@ def upload_file_to_master(tmpfile, master):
     while line:
         master.send(line)
         line = f.read(1024)
-    os.unlink(tmpfile.name)
+    # os.unlink(tmpfile.name)
 
 def connect_to_master():
     details_dict = dict(config.items('master'))
