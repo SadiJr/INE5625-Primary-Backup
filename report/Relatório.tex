@@ -47,15 +47,18 @@
 		O projeto foi feito usando a linguagem Python, usando \textit{sockets} para a comunicação entre os processos. Ao todo, existem três processos, cada qual contido em seu respectivo \textit{script} .py, que simulam os atores do sistema:
 		
 		\begin{itemize}
-			\item \textbf{front\_end.py:}\\Simula o \textit{front-end}, realiza a comunicação do cliente com o servidor principal. Para isso, tal processo se conecta ao servidor principal\footnote{A partir desse ponto, o servidor principal será chamado de servidor \textit{master} ou apenas \textit{master}} através de \textit{sockets} e das configurações lidas no arquivo \textit{ips.conf}. Possui uma interface de usuário em modo texto, com a possibilidade de receber \textit{inputs} do usuário, além de também ser possível receber parâmetros da linha de comando. O \textit{front-end} permite fazer requisições de envio (\textit{upload}), atualização (\textit{update}) e deleção (\textit{delete}) de arquivos para o servidor principal (\textit{master.py}). Além disso, é possível pedir que requisições já feitas sejam refeitas. Por fim, é possível rodar os testes unitários, para checar a saúde do programa (recomendado quando for rodado pela primeira vez numa máquina), e abrir um menu com mais detalhes sobre cada opção.
+			\item \textbf{client.py:} Uma representação de um cliente. Possui uma interface de usuário em modo texto, com a possibilidade de receber \textit{inputs} do usuário, além de também ser possível receber parâmetros da linha de comando. Usado para estabelecer a comunicação com o \textit{front-end}. Facilmente subistituído por uma interface gráfica ou \textit{website}. Por fim, é possível rodar os testes unitários, para checar a saúde do programa (recomendado quando for rodado pela primeira vez numa máquina), e abrir um menu com mais detalhes sobre cada opção.\\
+			\includegraphics[scale=.5]{pictures/01.png}
+			
+			\item \textbf{front\_end.py:}\\Simula o \textit{front-end}, realiza a comunicação do cliente com o servidor principal. Para isso, tal processo se conecta ao servidor principal\footnote{A partir desse ponto, o servidor principal será chamado de servidor \textit{master} ou apenas \textit{master}} através de \textit{sockets} e das configurações lidas no arquivo \textit{ips.conf}. O \textit{front-end} permite fazer requisições de envio (\textit{upload}), atualização (\textit{update}) e deleção (\textit{delete}) de arquivos para o servidor principal (\textit{master.py}). Além disso, é possível pedir para visualizar requisições já feitas.
 				
-				\includegraphics[scale=.7]{pictures/image3.png}
+				\includegraphics[scale=.5]{pictures/02.png}
 			
 			\item \textbf{master.py:}\\Simula o gerenciador de réplica primário. O \textit{master} é configurado por meio de um arquivo de configuração chamado \textit{ips.conf}. Ele busca tenta conectar-se aos servidores de backup (\textit{slaves.py}) antes de começar a receber conexões de clientes. Caso ele apenas consiga se conectar com menos da metade dos backups esperados, ele cancela o processo e desliga. Caso isso não aconteça, o servidor inicia, e aguarda requisição dos clientes, sendo que apenas um cliente pode executar uma operação por vez. As requisições recebidas (\textit{update}, \textit{upload}, \textit{delete}) são executadas no \textit{master} e mandadas para os backups, para que eles as executem também. O resultado da operação é mandado de volta para o cliente que fez a requisição. Caso a operação resulte em erro, é feito um \textit{rollback} para o estado anterior ao da operação, seguido de uma ordem para os \textit{slaves} de os mesmos fazerem também um \textit{rollback}. Finalmente, a cada 10 requisições executadas, o \textit{master} envia para os \textit{slaves} seu arquivo de \textit{log}, isso foi feito visando implementar um algoritmo de eleição de um novo master, caso o atual caia, mas a implementação dessa funcionalidade foi descontinuada.\\
-				\includegraphics[scale=.7]{pictures/image1.png}
+				\includegraphics[scale=.4]{pictures/03.png}
 				
 			\item \textbf{slave.py:}\\Simula um gerenciador de réplica secundário. Ele roda como um servidor, seguindo as especificações de um arquivo de configuração personalizado (\textit{slave.conf}), e espera a conexão do \textit{master}. O \textit{slave} recebe requisições do \textit{master}, as executa, e retorna seu resultado para o \textit{master}. Também pode fazer \textit{rollback}, caso receba tal ordem do \textit{master}, além de também receber cópias periódicas do arquivo de \textit{log} do \textit{master}.\\
-				\includegraphics[scale=.7]{pictures/image2.png}
+				\includegraphics[scale=.5]{pictures/04.png}
 		\end{itemize}
 	
 	\section{\normalsize INSTRUÇÕES DE USO}
@@ -65,7 +68,7 @@
 	
 	\section{\normalsize FASES DE COMUNICAÇÃO}
 		\begin{enumerate}
-			\item \textbf{Requisição:} O usuário escolhe o comando que deseja, digitando a letra do comando e o nome ou o caminho do arquivo. Antes da requisição do usuário em si ser enviada para o \textit{master}, é enviada uma requisição especial, \textit{get\_last\_id} que pede ao \textit{master} o \textit{id} da última requisição, para que esta nova operação tenha seu próprio \textit{id} único. Assim que o \textit{id} é recebido, a requisição do usuário  é enviada para o \textit{master} com um novo \textit{id}\footnote{id = get\_last\_id + 1} único.
+			\item \textbf{Requisição:} O usuário, comunicando-se com o \textit{front-end} através da interface do \textit{client}, escolhe o comando que deseja executar, digitando a letra do comando e o nome ou o caminho do arquivo. Quando a requisição chega no \textit{front-end}, o mesmo a trata de acordo com o tipo de requisição. De forma geral, requisições que envolvem chamadas ao \textit{master} são precedidas por uma requisição especial, \textit{get\_last\_id} que pede ao \textit{master} o \textit{id} da última requisição, para que esta nova operação tenha seu próprio \textit{id} único. Assim que o \textit{id} é recebido, a requisição do \textit{front-end} é enviada para o \textit{master} com um novo \textit{id}\footnote{id = get\_last\_id + 1} único.
 			
 			\item \textbf{Coordenação:} O \textit{master}, após ter enviado o último \textit{id}, recebe a requisição do \textit{front-end}. Então, começa a executar localmente tal requisição, após ter finalizado seu processo local, o \textit{master} então envia a requisição para os gerenciadores secundários (\textit{slaves}).
 			
@@ -73,6 +76,6 @@
 			
 			\item \textbf{Acordo:} O \textit{master}, recebendo os resultados dos \textit{slaves}, e tendo tido sucesso em sua própria execução, decide se a operação no geral foi um sucesso ou não da seguinte forma: Se pelo menos a maioria dos servidores (mais da metade), responderem com falha, a operação falha, se responderem com sucesso, é um sucesso.
 			
-			\item \textbf{Resposta:} O \textit{master} envia ao \textit{front-end} o resultado da operação baseada no acordo. 
+			\item \textbf{Resposta:} O \textit{master} envia ao \textit{front-end} o resultado da operação baseada no acordo, e este envia o resultado ao \textit{client}. 
 		\end{enumerate}
 \end{document}
