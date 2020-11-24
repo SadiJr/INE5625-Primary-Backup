@@ -64,7 +64,7 @@ def treat_message(client, message, master):
         filesize = int(message.split(';')[1])
 
         receive = 0
-        with tempfile.NamedTemporaryFile() as tmpfile:
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
             try:
                 while receive < filesize:
                     data = client.recv(1024)
@@ -123,7 +123,7 @@ def upload_file_to_master(tmpfile, master):
     while line:
         master.send(line)
         line = f.read(1024)
-
+    os.unlink(tmpfile.name)
 
 def connect_to_master():
     details_dict = dict(config.items('master'))

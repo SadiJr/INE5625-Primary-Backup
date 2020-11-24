@@ -123,7 +123,7 @@ def upload_file_to_master(tmpfile, master):
     while line:
         master.send(line)
         line = f.read(1024)
-
+    os.unlink(tmpfile.name)
 
 def connect_to_master():
     details_dict = dict(config.items('master'))
