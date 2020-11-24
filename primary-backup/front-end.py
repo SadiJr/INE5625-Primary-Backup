@@ -55,7 +55,8 @@ def user_connection(connection, client, master):
 
 
 def treat_message(client, message, master):
-    identifier = int(master.send(b"get_last_id")) + 1
+    master.send(b"get_last_id")
+    identifier = int(master.recv(16)) + 1
 
     print(message)
     if message.__contains__("filename:"):
