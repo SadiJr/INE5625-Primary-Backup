@@ -5,7 +5,6 @@ from builtins import print
 from pathlib import Path
 import configparser
 import collections
-import traceback
 import tempfile
 from shutil import copyfile
 
@@ -151,7 +150,7 @@ def receive_file(connection, filename, filesize, identifier, action):
         copyfile(filename, (tempdir.name + os.path.sep + filename))
         print("Backup realizado com sucesso!")
     except FileNotFoundError:
-        print(f"Arquivo {filename} não encontrado no servidor, abortando!")
+        print(f"Arquivo {filename} não encontrado no servidor, não será  realizada cópia de segurança!")
 
     file = open(filename, "wb")
     receive_size = 0
@@ -184,9 +183,8 @@ def receive_file(connection, filename, filesize, identifier, action):
         connection.send("Erro ao realizar transição. Tente novamente".encode())
         return
 
-    response = "Arquivo " + str(action) + " com sucesso"
+    response = f"Arquivo {filename} {action} com sucesso"
     write_log(identifier, response)
-
     connection.send(response.encode())
 
 
@@ -234,12 +232,15 @@ def delete(connection, data):
                       " ou respondeu com erro na operação")
 
                 rollback()
-                connection.send("Erro ao realizar operação de deletar o arquivo".encode())
+                error_message = f"Erro ao realizar operação de deletar o arquivo {filename}"
+                connection.send(error_message.encode())
             else:
-                connection.send("Arquivo deletado com sucesso".encode())
+                message = f"Arquivo {filename} deletado com sucesso"
+                connection.send(message.encode())
         else:
             print("O arquivo {0} não existe no servidor! Abortando operação.".format(filename))
-            connection.send("Arquivo não existente no servidor".encode())
+            message = f"Arquivo {filename} não encontrado no servidor."
+            connection.send(message.encode())
 
 
 def get_last_id():
@@ -318,7 +319,14 @@ def connect(connection, client):
             else:
                 print("Erro ao tentar encontrar id {0} no registro de logs.".format(identifier))
                 sys.exit(0)
-
+        elif message.__contains__("verify_file:"):
+            filename = message.split(':')[1]
+            if verify_if_file_exists(filename):
+                result = b"0";
+            else:
+                result = b"1"
+            connection.send(result)
+            continue
         else:
             connection.send("Erros na requisição".encode())
             connection.close()
@@ -390,9 +398,7 @@ def init_server():
             connection, client = sock.accept()
             connect(connection, client)
         except Exception:
-            traceback.print_exc()
             connection.close()
-            init_server()
 
 
 if __name__ == "__main__":

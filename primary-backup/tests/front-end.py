@@ -14,7 +14,7 @@ config.read('ips.conf')
 
 def write_history(result):
     f = open("history.log", "a+")
-    log = result + "\n"
+    log = str(result) + "\n"
     f.write(log)
     f.flush()
     f.close()
@@ -55,7 +55,8 @@ def user_connection(connection, client, master):
 
 
 def treat_message(client, message, master):
-    identifier = int(master.send(b"get_last_id")) + 1
+    master.send(b"get_last_id")
+    identifier = int(master.recv(16)) + 1
 
     print(message)
     if message.__contains__("filename:"):
@@ -63,7 +64,7 @@ def treat_message(client, message, master):
         filesize = int(message.split(';')[1])
 
         receive = 0
-        with tempfile.NamedTemporaryFile() as tmpfile:
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
             try:
                 while receive < filesize:
                     data = client.recv(1024)
@@ -91,7 +92,7 @@ def treat_message(client, message, master):
 
         master.send(header.encode())
         result = master.recv(1024)
-        write_history(result)
+        write_history(result.decode())
         client.send(result)
 
 
@@ -160,7 +161,7 @@ def init():
 
     master = connect_to_master()
 
-    sock.listen()
+    sock.listen(0)
     while True:
         try:
             print("Esperando conexões")
@@ -168,6 +169,7 @@ def init():
             user_connection(connection, client, master)
         except Exception:
             connection.close()
+            traceback.print_exc()
 
 
 if __name__ == "__main__":
