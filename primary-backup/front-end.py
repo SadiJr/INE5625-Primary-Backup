@@ -92,7 +92,7 @@ def treat_message(client, message, master):
 
         master.send(header.encode())
         result = master.recv(1024)
-        write_history(result)
+        write_history(result.decode())
         client.send(result)
 
 
@@ -161,7 +161,7 @@ def init():
 
     master = connect_to_master()
 
-    sock.listen()
+    sock.listen(0)
     while True:
         try:
             print("Esperando conexões")
